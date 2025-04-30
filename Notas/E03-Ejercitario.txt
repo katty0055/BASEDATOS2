@@ -1,0 +1,35 @@
+/*
+	E03-EJERCITARIO
+
+1. El salario de cada empleado está dado por su posición, y la asignación de la categoría vigente
+en dicha posición. Tanto la posición como la categoría vigente tienen la fecha fin nula – Un
+solo salario está vigente en un momento dado). Tomando como base la lista de empleados,
+verifique cuál es el salario máximo, el mínimo y el promedio. Formatee la salida para que se
+muestren los puntos de mil.
+*/
+
+SELECT TO_CHAR(MIN(CS.ASIGNACION),'999G999G999') AS MINIMO, TO_CHAR(MAX(CS.ASIGNACION),'999G999G999') AS MAXIMO, 
+TO_CHAR(AVG(NVL(CS.ASIGNACION,0)),'999G999G999') AS PROMEDIO
+FROM B_POSICION_ACTUAL PA
+JOIN B_CATEGORIAS_SALARIALES CS
+ON CS.COD_CATEGORIA = PA.COD_CATEGORIA
+RIGHT JOIN B_EMPLEADOS E
+ON E.CEDULA = PA.CEDULA
+WHERE CS.FECHA_FIN IS NULL AND PA.FECHA_FIN IS NULL;
+
+/*
+Basado en la consulta anterior, determine la mayor y menor asignación en cada área. Su
+consulta tendrá: Nombre de área, Asignación Máxima, Asignación Mínima.
+*/
+
+SELECT AR.NOMBRE_AREA,
+TO_CHAR(MIN(CS.ASIGNACION),'999G999G999') AS ASIGNACION_MINIMA, TO_CHAR(MAX(CS.ASIGNACION),'999G999G999') AS ASIGNACION_MAXIMA
+FROM B_POSICION_ACTUAL PA
+JOIN B_AREAS AR
+ON AR.ID = PA.ID_AREA
+JOIN B_CATEGORIAS_SALARIALES CS
+ON CS.COD_CATEGORIA = PA.COD_CATEGORIA
+RIGHT JOIN B_EMPLEADOS E
+ON E.CEDULA = PA.CEDULA
+WHERE CS.FECHA_FIN IS NULL AND PA.FECHA_FIN IS NULL
+GROUP BY AR.NOMBRE_AREA;

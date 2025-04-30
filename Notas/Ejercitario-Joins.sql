@@ -138,8 +138,8 @@ los archivos físicos que conforman los espacios de tabla de la Base de Datos. S
 -Solamente el nombre del archivo (sin mencionar la carpeta o camino)
 */
 
-SELECT SUBSTR(FILE_NAME,INSTR(FILE_NAME,'\',-1)+1)
-FROM DBA_DATA_FILES;
+--SELECT SUBSTR(FILE_NAME,INSTR(FILE_NAME,'\',-1)+1
+--FROM DBA_DATA_FILES;
 
 --NOTAS
 
@@ -147,3 +147,152 @@ FROM DBA_DATA_FILES;
 SELECT NEXT_DAY(TRUNC(SYSDATE), 1) AS dia1 FROM dual;
 
 
+/*
+10 - Se pretende realizar el aumento salarial del 5% para todas las categorías. Debe listar la 
+categoría (código y nombre), el importe actual,  el  importe aumentado al 5% (redondeando la 
+cifra a la centena), y la diferencia.  
+Formatee la salida (usando TO_CHAR)  para que los montos tengan los puntos de mil. 
+*/
+
+--OB
+
+SELECT CS.COD_CATEGORIA, CS.NOMBRE_CAT, TO_CHAR(CS.ASIGNACION,'999G999G999'),
+TO_CHAR(ROUND((CS.ASIGNACION *1.05),-2),'999G999G999') AS "AUMENTADO AL 5%", 
+TO_CHAR((ROUND((CS.ASIGNACION *1.05),-2) - CS.ASIGNACION),'999G999G999') AS "DIFERENCIA"
+FROM B_CATEGORIAS_SALARIALES CS;
+
+/*
+ Considerando la fecha de hoy,  indique cuándo caerá el próximo DOMINGO.
+*/
+
+SELECT NEXT_DAY(TRUNC(SYSDATE), 7) FROM DUAL;
+SELECT NEXT_DAY(SYSDATE, 'DOMINGO') AS PROXIMO_DOMINGO FROM DUAL;
+
+/*
+Utilice la función LAST_DAY para determinar si este año es bisiesto o no. Con CASE  y con 
+DECODE, haga aparecer la expresión ‘bisiesto’ o ‘no bisiesto’ según corresponda. (En un 
+año bisiesto el mes de febrero tiene 29 días)  
+*/
+
+SELECT LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'YEAR'),1)) AS "ULTIMO DIA",
+DECODE(LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'YEAR'),1)), TO_DATE('28/02/25')  , 'NO BISIESTO' ,'BISIESTO'),
+CASE
+	WHEN 
+		LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'YEAR'),1)) = TO_DATE('28/02/25') 
+	THEN
+		'NO BISIESTO'
+	ELSE
+		'BISIESTO'
+END TIPO
+FROM DUAL;
+
+/*
+13- Tomando en cuenta la fecha de hoy, verifique que fecha dará redondeando al año? Y 
+truncando al año? Escriba el resultado.  Pruebe lo mismo suponiendo que sea el 1 de Julio del 
+año. Pruebe también el 12 de marzo.
+*/
+
+SELECT ROUND(SYSDATE,'YEAR') FROM DUAL;
+
+SELECT TRUNC(SYSDATE,'YEAR') FROM DUAL;
+
+SELECT ROUND(TO_DATE('01/07/25'),'YEAR') FROM DUAL;
+
+SELECT TRUNC(TO_DATE('01/07/25'),'YEAR') FROM DUAL;
+
+SELECT ROUND(TO_DATE('12/03/25'),'YEAR') FROM DUAL;
+
+SELECT TRUNC(TO_DATE('12/03/25'),'YEAR') FROM DUAL;
+
+/*
+14- Imprima su edad en años y meses. Ejemplo: Si nació el 23/abril/1972, tendría 43 años y 3 
+meses a la fecha. 
+*/
+
+SELECT ('tendría '|| TRUNC(MONTHS_BETWEEN(SYSDATE,TO_DATE('16/10/1995'))/12) ||'  años y '|| 
+ROUND(MONTHS_BETWEEN(SYSDATE, TRUNC(SYSDATE,'YEAR'))) || ' meses a la fecha') AS "EDAD" FROM DUAL;
+
+/*
+15. Determine la fecha y hora del sistema en el formato apropiado. 
+*/
+
+SELECT TO_CHAR(SYSDATE, 'DD/MM/YYYY HH:MM') FROM DUAL;
+
+/*
+16. Liste  ID y NOMBRE de todos los artículos que no están incluidos en ninguna VENTA. Debe 
+utilizar necesariamente la sentencia MINUS.
+*/
+
+SELECT ID, NOMBRE FROM B_ARTICULOS
+MINUS
+SELECT DV.ID_ARTICULO , A.NOMBRE
+FROM B_DETALLE_VENTAS DV
+JOIN B_ARTICULOS A
+ON A.ID = DV.ID_ARTICULO;
+
+
+/*
+ El área de CREDITOS Y COBRANZAS solicita un informe de las ventas a crédito 
+efectuadas en el año 2018 y cuyas cuotas tienen atraso en el pago. A las cuotas que se 
+encuentran en dicha situación se le aplica una tasa de interés del 0.5% por cada día de atraso. 
+Se considera que una cuota está en mora cuando ya pasó la fecha de vencimiento y no existe 
+aún pago alguno. Se pide mostrar los siguientes datos y ordenar de forma descendente por 
+días de atraso. 
+Nº FACTURA 
+VENDEDOR 
+RUC_CI 
+CLIENTE 
+CUOTA 
+FECHA VTO 
+MONTO CUOTA 
+INTERÉS 
+DÍAS DE ATRASO 
+MONTO A PAGAR 
+*/
+
+SELECT V.NUMERO_FACTURA, E.NOMBRE||' '||E.APELLIDO AS "VENDEDOR", DECODE(P.TIPO_PERSONA, 'F', P.CEDULA, 'J', P.RUC)AS RUC_CI,
+P.NOMBRE||' '||P.APELLIDO AS "CLIENTE", PG.NUMERO_CUOTA||'/'||V.PLAZO AS "CUOTA", 
+TO_CHAR(PG.MONTO_CUOTA,'999G999G999') AS MONTO_CUOTA, 
+ROUND(SYSDATE - PG.VENCIMIENTO )AS "DIAS DE ATRASO",
+TO_CHAR((0.005 * ROUND(SYSDATE - PG.VENCIMIENTO) * PG.MONTO_CUOTA),'999G999G999') AS "INTERES",
+TO_CHAR(((0.005 * ROUND(SYSDATE - PG.VENCIMIENTO) * PG.MONTO_CUOTA) + PG.MONTO_CUOTA),'999G999G999')AS "MONTO CUOTA"
+FROM B_PLAN_PAGO PG
+JOIN B_VENTAS V
+ON V.ID = PG.ID_VENTA
+JOIN B_EMPLEADOS E 
+ON E.CEDULA = V.CEDULA_VENDEDOR
+JOIN B_PERSONAS P
+ON P.ID = V.ID_CLIENTE
+WHERE P.ES_CLIENTE ='S' AND V.TIPO_VENTA = 'CR'
+AND EXTRACT(YEAR FROM V.FECHA) = '2018'
+AND (PG.SALDO_CUOTA = PG.MONTO_CUOTA AND PG.VENCIMIENTO < SYSDATE );
+
+/*
+18. El Dpto. Financiero de la empresa necesita un informe de los movimientos correspondientes a 
+compras y ventas efectuadas en el primer semestre del año 2018. 
+El informe debe contener: 
+ Fecha de la operación. 
+ Concepto: Para obtener esta columna debe concatenar las expresiones y/o campos: 
+ Operación: Venta o Compra de mercaderías según factura.
+ Tipo de Factura: Contado o Crédito. 
+ Factura: para obtener el formato Nº 000-000-0000000, debe concatenar el número '001' + 
+el id de la localidad del proveedor o cliente + el número de factura.  
+Recuerde rellenar con ceros hasta alcanzar la cantidad de caracteres establecidos para 
+cada grupo. Ejemplos: 
+'VENTA DE MERCADERÍAS SEGÚN FACTURA CONTADO Nº 001-002-0003264' 
+'COMPRA DE MERCADERÍAS SEGÚN FACTURA CREDITO Nº 001-002-0003264'  
+ Monto Débito: Si es una compra se coloca el monto de la operación, pero si es una venta 
+se coloca 0. 
+ Monto Crédito: Si es una venta se coloca el monto de la operación, pero si es una compra 
+se coloca 0. 
+Por último, se pide que ordene los registros por la fecha en forma ascendente.
+(NO HAY TABLA DE COMPRAS)
+*/
+
+SELECT V.FECHA, 'VENTA '|| V.TIPO_VENTA ||' '||'001-'|| LPAD(P.ID_LOCALIDAD,3,0) ||'-'|| LPAD(V.NUMERO_FACTURA,7,0) AS CONCEPTO,
+V.MONTO_TOTAL AS MONTO_CREDITO
+FROM B_VENTAS V
+JOIN B_PERSONAS P
+ON P.ID = V.ID_CLIENTE
+WHERE V.FECHA BETWEEN TO_DATE('01/01/2018','DD/MM/YYYY') AND TO_DATE('30/06/2018','DD/MM/YYYY')
+ORDER BY V.FECHA ASC;

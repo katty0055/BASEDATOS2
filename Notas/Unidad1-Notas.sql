@@ -103,3 +103,4 @@ SELECT * FROM B_EMPLEADOS WHERE DPTO_ID = &dpto_id;
 
 --UNDEFINE : elimina la definición de una variable
 UNDEFINE ced_empleado
+
